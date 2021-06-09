@@ -108,3 +108,9 @@ class BRDF_Model(Model):
                                                 phis, rotation, coords))) @
                      StokesVector(inc))
 
+    def VectoredMuellerBRDF(self, source, viewer, normal, xaxis, coords='plane'):
+        
+        return  MuellerMatrix(SCATPY.VectoredBRDF(self.handle, source[0], source[1], source[2], 
+                                                   viewer[0], viewer[1], viewer[2], 
+                                                   normal[0], normal[1], normal[2],     
+                                                   xaxis[0], xaxis[1], xaxis[2], coords))

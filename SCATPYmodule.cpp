@@ -19,7 +19,7 @@ std::map<int,Local_BRDF_Model_Ptr> mapLocal_BRDF_Model;
 std::map<int,Model_Ptr<RCW_Model> > mapRCW_Model;
 std::map<int,Model_Ptr<CrossRCW_Model> > mapCrossRCW_Model;
 std::map<int,Free_Space_Scatterer_Ptr> mapFSS_Model;
-std::map<int,StackModel_Ptr> mapStackModel;
+std::map<int,StackModel_Ptr> mapStackModel; 
 std::map<int,Model_Ptr<Model> > mapLone_Model;
 	       
 int modelct = 0;
@@ -386,6 +386,36 @@ static PyObject * BRDF(PyObject *self, PyObject *args)
     else return NULL;
     
     MuellerMatrix mueller = mapBRDF_Model[handle]->Mueller(thetai,thetas,phis,rotation,_coords);
+
+    return PyMueller(mueller);
+  }
+  catch (std::exception& e) {
+    PyErr_SetString(PyExc_Exception,(format("At %s, ",__func__) + e.what()).c_str());
+    return NULL;
+  }    
+}
+
+static PyObject * VectoredBRDF(PyObject *self, PyObject *args)
+{
+  try {
+    int handle;
+    Vector source, viewer, normal, xaxis;
+    const char *coords = "plane";
+    
+    if (!PyArg_ParseTuple(args, "idddddddddddd|s", &handle,
+			  &source.x, &source.y, &source.z,
+			  &viewer.x, &viewer.y, &viewer.z,
+			  &normal.x, &normal.y, &normal.z,
+			  &xaxis.x, &xaxis.y, &xaxis.z, &coords))
+        return NULL;
+
+    BRDF_Model::Coordinate_System _coords;
+    if (std::string(coords)=="psps") _coords = BRDF_Model::psps;
+    else if (std::string(coords)=="xyxy") _coords = BRDF_Model::xyxy;
+    else if (std::string(coords)=="plane") _coords = BRDF_Model::plane;
+    else return NULL;
+    
+    MuellerMatrix mueller = mapBRDF_Model[handle]->Mueller(source,viewer,normal,xaxis,_coords);
 
     return PyMueller(mueller);
   }
@@ -823,6 +853,35 @@ static PyObject * GetModelDictionary(PyObject *self, PyObject *args)
   }    
 }
 
+static PyObject * Lu_Chipman_Decomposition(PyObject *self, PyObject *args)
+{
+  try {
+
+    MuellerMatrix m;
+    if (!PyArg_ParseTuple(args, "dddddddddddddddd",
+			  &m[0][0],&m[0][1],&m[0][2],&m[0][3],
+			  &m[1][0],&m[1][1],&m[1][2],&m[1][3],
+			  &m[2][0],&m[2][1],&m[2][2],&m[2][3],
+			  &m[3][0],&m[3][1],&m[3][2],&m[3][3]
+			  ))
+        return NULL;
+
+    MuellerMatrix depolarizer,retarder,diattenuator;
+    m.Lu_Chipman_Decomposition(depolarizer, retarder, diattenuator);
+
+    PyObject *result = PyTuple_New(3);
+    PyTuple_SetItem(result, 0, PyMueller(depolarizer));
+    PyTuple_SetItem(result, 1, PyMueller(retarder));
+    PyTuple_SetItem(result, 2, PyMueller(diattenuator));
+      
+    return result;
+  }
+  catch (std::exception& e) {
+    PyErr_SetString(PyExc_Exception,(format("At %s, ",__func__) + e.what()).c_str());
+    return NULL;
+  }    
+}
+
 extern "C" {
 
 static PyMethodDef SCATPYMethods[] = {
@@ -842,6 +901,7 @@ static PyMethodDef SCATPYMethods[] = {
      {"Get_CrossRCW_Model",  Get_CrossRCW_Model, METH_VARARGS, "Gets an instance of a CrossRCW_Model."},
      {"Free_CrossRCW_Model",  Free_CrossRCW_Model, METH_VARARGS, "Frees an instance of a CrossRCW_Model."},
      {"BRDF",  BRDF, METH_VARARGS, "Returns the Mueller matrix BRDF for a specified geometry"},
+     {"VectoredBRDF", VectoredBRDF,  METH_VARARGS, "Returns the Mueller matrix BRDF for a specified geometry (expressed as vecotors"},
      {"LocalDSC",  LocalDSC, METH_VARARGS, "Returns the Mueller matrix differential scattering cross section for a specified geometry"},
      {"FSSjones", FSSjones, METH_VARARGS, "Returns the jones scattering matrix for a specified geometry"},
      {"FSSext", FSSext, METH_VARARGS, "Returns the Mueller matrix extinction cross section"},
@@ -858,7 +918,8 @@ static PyMethodDef SCATPYMethods[] = {
      {"GetModelName", GetModelName, METH_VARARGS, "Gets the name of a model"},
      {"ReflectionCoefficient", ReflectionCoefficient, METH_VARARGS, "Gets the reflection coeffient"},
      {"TransmissionCoefficient", TransmissionCoefficient, METH_VARARGS, "Gets the transmission coefficient"},     
-     {"GetOpticalConstant", GetOpticalConstant, METH_VARARGS, "Gets the optical constant from a file"},     
+     {"GetOpticalConstant", GetOpticalConstant, METH_VARARGS, "Gets the optical constant from a file"},
+     {"Lu_Chipman_Decomposition",Lu_Chipman_Decomposition, METH_VARARGS, "Performs a Lu-Chipman decomposition of a Mueller matrix"},
      
     {NULL, NULL, 0, NULL}        /* Sentinel */  
 };
