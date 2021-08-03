@@ -218,6 +218,11 @@ namespace SCATMECH {
                 bool operator<(const bounds& b) {
                     return x<b.x;
                 }
+#ifdef __APPLE__
+                bool operator<(const bounds& b) const {
+                    return x<b.x;
+                }
+#endif
             };
 
             const segmentvector& Get_Boundaries() {

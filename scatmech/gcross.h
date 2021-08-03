@@ -80,7 +80,19 @@ namespace SCATMECH {
 					if (mat2 != b.mat2) return false;
                     return true;
                 }
-
+                
+#ifdef __APPLE__
+                bool operator<(const bounds& b) const {
+                    if (x==b.x) return mat2==b.mat1;
+                    else return x<b.x;
+                }
+                bool operator==(const bounds& b) const {
+                    if (x!=b.x) return false;
+                    if (mat1 != b.mat1) return false;
+                    if (mat2 != b.mat2) return false;
+                    return true;
+                }
+#endif
             };
 
             const boundary_vector& Get_Boundaries() {

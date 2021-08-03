@@ -28,8 +28,12 @@ class SCATPY_exception: public std::exception
 {
 public:
   SCATPY_exception(const std::string& _msg) : msg(_msg) {}
-#ifndef _MSC_VER
-  virtual ~SCATPY_exception() _GLIBCXX_USE_NOEXCEPT {}
+#ifdef __APPLE__
+  virtual ~SCATPY_exception() throw() {}
+#else
+  #ifndef _MSC_VER
+    virtual ~SCA¡TPY_exception() _GLIBCXX_USE_NOEXCEPT() {}
+  #endif
 #endif
   virtual const char *what() const throw() {
     return msg.c_str();

@@ -13,8 +13,11 @@ if platform.system() == 'Windows':
 if platform.system() == 'Linux':
     extra_compile_args = ['-Wno-deprecated-declarations']
     extra_link_args =[]
-elif 'CYGWIN' in platform.system():
-    extra_compile_args = ['-Wno-deprecated-declarations']
+elif platform.system() == 'Darwin':
+    import os
+    os.environ["CC"] = "gcc"
+    
+    extra_compile_args = ['-std=c++11']
     extra_link_args =[]
 
 scatmech_source = ['scatmech/allrough.cpp',
